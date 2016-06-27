@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
 
 namespace Software_Engineering
 {
@@ -11,6 +12,8 @@ namespace Software_Engineering
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        private SpriteFont font;
+        private List<Drawable> drawables = new List<Drawable>();
 
         public Game1()
         {
@@ -27,8 +30,9 @@ namespace Software_Engineering
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-
+            
             base.Initialize();
+            this.IsMouseVisible = true;
         }
 
         /// <summary>
@@ -39,8 +43,16 @@ namespace Software_Engineering
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
+            font = Content.Load<SpriteFont>("Arial");
 
-            // TODO: use this.Content to load your game content here
+            DrawableFactory factory = new ConcreteDrawableFactory();
+            drawables.Add(new BorderedDrawable(factory.Create(DrawableType.Button, new Point(10, 10), new Point(100, 50)).SetBackground(graphics,Color.Red),graphics,Color.Green,3));
+            drawables.Add(factory.Create(DrawableType.Label, new Point(200, 200), new Point(200, 30)).SetLabel("Software Engineering", font, Color.Black));
+            drawables.Add(
+                new LabeledButton(
+                    new BorderedDrawable(
+                        factory.Create(DrawableType.Button, new Point(200, 10), new Point(100, 50)).SetBackground(graphics, Color.Red), graphics, Color.White, 3), "Click Me!", font, Color.Yellow)
+            );
         }
 
         /// <summary>
@@ -62,7 +74,14 @@ namespace Software_Engineering
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            Iterator<Drawable> iterator = new DrawableIterator(drawables);
+            OptionVisitor<Drawable, bool> visitor = new DrawableVisitor();
+            Option<Drawable> a;
+
+            while (!(a = iterator.GetNext()).IsNone())
+            {
+                a.Visit<bool>(visitor, gameTime);
+            }
 
             base.Update(gameTime);
         }
@@ -75,7 +94,18 @@ namespace Software_Engineering
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            spriteBatch.Begin();
+
+            Iterator<Drawable> iterator = new DrawableIterator(drawables);
+            OptionVisitor<Drawable, bool> visitor = new DrawableVisitor();
+            Option<Drawable> a;
+
+            while (!(a = iterator.GetNext()).IsNone())
+            {
+                a.Visit<bool>(visitor, spriteBatch);
+            }
+
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
